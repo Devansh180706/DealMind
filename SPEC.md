@@ -1,6 +1,6 @@
-# Deal Intelligence Agent — Specification (SPEC.md)
+# DealMind — Specification (SPEC.md)
 
-**Project Name:** Deal Intelligence Agent  
+**Project Name:** DealMind (Deal Intelligence Agent)  
 **Hackathon:** HackwithHyderabad 3.0 (Hindsight Memory Hackathon)  
 **Track:** Sales & Revenue Copilot  
 
@@ -75,3 +75,4 @@
 - Real-time audio recording or speech-to-text (relies on text transcript/call notes input).
 - Direct Salesforce/HubSpot OAuth sync (uses clean internal JSON data).
 - Complex user permission/multi-tenant billing tiers.
+

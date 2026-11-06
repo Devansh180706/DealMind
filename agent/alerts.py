@@ -158,3 +158,4 @@ def scan_all_deals_for_alerts(
     # Sort critical first
     all_alerts.sort(key=lambda a: severity_order.get(a.severity, 3))
     return all_alerts
+

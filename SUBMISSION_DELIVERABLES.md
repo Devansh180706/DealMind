@@ -12,7 +12,7 @@ This document contains complete, ready-to-use drafts for all mandatory hackathon
 **[00:00 - 00:10] Hook & Problem**  
 *Visual:* Screen recording opens on Streamlit **🚨 Active Alerts** tab.  
 *Speaker:*  
-> "In enterprise sales, closing deals takes months across dozens of meetings. Notes get buried in CRMs, commitments are missed, and reps walk into calls unprepared. We built the **Deal Intelligence Agent**—a persistent memory copilot powered by Vectorize Hindsight and Groq."
+> "In enterprise sales, closing deals takes months across dozens of meetings. Notes get buried in CRMs, commitments are missed, and reps walk into calls unprepared. We built **DealMind**—an autonomous deal intelligence agent powered by Vectorize Hindsight and Groq."
 
 **[00:10 - 00:25] Proactive Risk Alerts**  
 *Visual:* Mouse hovers over the Horizon Telecom Critical Alert.  
@@ -34,14 +34,14 @@ This document contains complete, ready-to-use drafts for all mandatory hackathon
 
 ## 2. 📱 Social Media Post (LinkedIn / X)
 
-**Post Title:** Why AI Agents Need Memory: Building the Deal Intelligence Agent 🚀
+**Post Title:** Why AI Agents Need Memory: Building DealMind 🚀
 
 **Post Copy:**  
 Most sales reps waste 4+ hours every week digging through CRM notes before customer calls—or worse, forgetting promises made weeks ago. 
 
 Standard chatbots can't solve this because they suffer from session amnesia. 
 
-For **HackwithHyderabad 3.0**, our team built the **Deal Intelligence Agent**—an autonomous sales copilot with long-term, graph-backed memory powered by **Vectorize Hindsight** and **Groq**:
+For **HackwithHyderabad 3.0**, our team built **DealMind**—an autonomous deal intelligence agent with long-term, graph-backed memory powered by **Vectorize Hindsight** and **Groq**:
 
 ✨ **What it does:**
 1. **Remembers Every Interaction:** Isolates each account into its own Hindsight memory bank (`deal-{id}`) to track objections, sentiment, and pricing changes over time.
@@ -57,12 +57,12 @@ Check out our full open-source repo, architecture diagram, and 60-second walkthr
 
 ## 3. 📝 Technical Article / Case Study (Medium / Dev.to)
 
-### Title: Moving Beyond Stateless LLMs: Architecting a Deal Intelligence Agent with Vectorize Hindsight
+### Title: Moving Beyond Stateless LLMs: Architecting DealMind with Vectorize Hindsight
 
 ### Introduction
 The generative AI hype cycle has given us thousands of conversational wrappers. But in real-world business workflows—especially high-stakes enterprise sales—stateless chatbots fall flat. When an Account Executive is on their 6th call with an enterprise buyer, they don't need generic sales tips; they need to know what the CFO objected to three weeks ago, what discount terms competitor CloudFort offered, and what redlines are overdue.
 
-In this article, we break down how we built the **Deal Intelligence Agent** using **Vectorize Hindsight** and **Groq** for HackwithHyderabad 3.0.
+In this article, we break down how we built **DealMind** using **Vectorize Hindsight** and **Groq** for HackwithHyderabad 3.0.
 
 ### Why Vector Search Alone Isn't Enough
 Traditional RAG (Retrieval-Augmented Generation) splits documents into arbitrary vector chunks. But sales deals are dynamic graphs with temporal dependencies:
@@ -90,3 +90,4 @@ We utilized a dual-bank topology using `hindsight-client`:
 
 ### Conclusion
 Persistent memory transforms AI from a novelty question-answering tool into an indispensable enterprise partner. You can explore the code and run the Streamlit app locally on GitHub!
+

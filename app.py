@@ -22,7 +22,7 @@ from agent.memory import recall_deal, recall_playbook
 
 # Page configuration
 st.set_page_config(
-    page_title="Deal Intelligence Agent",
+    page_title="DealMind | Deal Intelligence Agent",
     page_icon="💼",
     layout="wide",
     initial_sidebar_state="expanded",
@@ -57,8 +57,8 @@ st.markdown("""
 
 # Sidebar Navigation
 st.sidebar.image("https://img.icons8.com/isometric/100/brain.png", width=64)
-st.sidebar.title("Deal Intel Agent")
-st.sidebar.caption("Powered by Vectorize Hindsight & Groq")
+st.sidebar.title("DealMind")
+st.sidebar.caption("Autonomous Deal Intelligence • Powered by Hindsight & Groq")
 
 nav = st.sidebar.radio(
     "Navigation",

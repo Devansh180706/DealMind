@@ -1,6 +1,6 @@
-# Deal Intelligence Agent - Workspace Rules & Instructions
+# DealMind — Workspace Rules & Instructions
 
-**PROJECT**: Deal Intelligence Agent for HackwithHyderabad 3.0 (Hindsight Memory Hackathon).  
+**PROJECT**: DealMind (Deal Intelligence Agent for HackwithHyderabad 3.0).  
 **JUDGING CRITERIA**:
 - Innovation: 30%
 - Hindsight Memory: 25%

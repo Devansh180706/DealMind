@@ -176,3 +176,4 @@ def extract_facts_from_transcript(
     }
 
     return extracted, sentences_to_retain, meta_report
+

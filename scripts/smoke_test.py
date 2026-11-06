@@ -87,7 +87,7 @@ def test_hindsight():
 
 if __name__ == "__main__":
     print("=" * 60)
-    print("DEAL INTELLIGENCE AGENT — SMOKE TEST")
+    print("DEALMIND — SMOKE TEST")
     print("=" * 60)
     
     groq_ok = test_groq()
@@ -98,3 +98,4 @@ if __name__ == "__main__":
     print(f"  Groq API:        {'[PASSED]' if groq_ok else '[FAILED]'}")
     print(f"  Hindsight Cloud: {'[PASSED]' if hindsight_ok else '[INFERENCE-KEY DETECTED / FALLBACK READY]'}")
     print("=" * 60)
+

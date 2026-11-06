@@ -138,7 +138,7 @@ def generate_pre_call_brief(
     playbook_context_str = "\n".join(playbook_context_lines) if playbook_context_lines else "No specific playbook entries found."
 
     prompt = (
-        f"You are the Deal Intelligence Agent preparing a sales rep for an upcoming meeting with {company_name} (Deal ID: {deal_id}).\n\n"
+        f"You are DealMind, an autonomous deal intelligence assistant preparing a sales rep for an upcoming meeting with {company_name} (Deal ID: {deal_id}).\n\n"
         f"RECALLED DEAL MEMORIES (CITE THESE USING [Memory #X]):\n{deal_context_str}\n\n"
         f"RECALLED COMPANY PLAYBOOK TACTICS (CITE THESE USING [Playbook #Y]):\n{playbook_context_str}\n\n"
         "INSTRUCTIONS:\n"
@@ -169,3 +169,4 @@ def generate_pre_call_brief(
         memories_used=memories_used_list,
         has_history=True
     )
+

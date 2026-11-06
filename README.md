@@ -1,5 +1,5 @@
-# Deal Intelligence Agent 💼🧠
-**Autonomous B2B Sales Copilot with Long-Term Memory & Cross-Deal Reflection**  
+# DealMind 💼🧠
+**Autonomous B2B Sales Intelligence Agent with Long-Term Memory & Cross-Deal Reflection**  
 *Built for HackwithHyderabad 3.0 (Hindsight Memory Hackathon)*
 
 ---
@@ -9,7 +9,7 @@
 Enterprise B2B sales cycles take 3 to 6 months across 4 to 8 meetings with different stakeholders (economic buyers, technical evaluators, CFOs, legal teams). 
 
 - **The Problem**: Sales reps manage 15–20 deals simultaneously. Critical details (budget objections, competitor pitches, promised deadlines, legal redlines) get buried in 30-page CRM notes. Reps repeatedly enter meetings unprepared or fail to leverage tactics that worked across other closed deals.
-- **The Solution**: The **Deal Intelligence Agent** is an autonomous sales copilot powered by **Vectorize Hindsight** and **Groq**. It retains every interaction into persistent, entity-resolved memory, detects changes and contradictions over time, briefs reps before calls in seconds, and autonomously reflects across won/lost deals to extract winning sales playbooks.
+- **The Solution**: **DealMind** is an autonomous deal intelligence agent powered by **Vectorize Hindsight** and **Groq**. It retains every interaction into persistent, entity-resolved memory, detects changes and contradictions over time, briefs reps before calls in seconds, and autonomously reflects across won/lost deals to extract winning sales playbooks.
 
 ---
 
@@ -151,3 +151,4 @@ Test coverage:
 2. **00:15 - 00:30 | Memory OFF vs ON**: Go to **⚡ Brief Me**. Select *Acme Corp*. Click **Memory OFF** first: shows generic boilerplate. Flip to **Memory ON**: Hindsight immediately recalls Sarah Connor's exact \$75k budget objection and past quotes from CloudFort.
 3. **00:30 - 00:45 | Log a Call & Extract**: Switch to **📝 Log a Call**. Paste a debrief where Alex presented the ROI calculator. Click **Extract & Retain**. Watch the agent parse the facts, check for contradictions, and retain into `deal-acme-corp`.
 4. **00:45 - 01:00 | The Learning Loop**: Open **🧠 Playbook Insights**. Show Hindsight `reflect()` synthesizing cross-deal evidence: *"Presenting ROI case studies closes 80%+ of deals where CFOs challenge price."* Click **🎯 Ground Truth Verification** to prove the agent autonomously discovered the planted patterns!
+
