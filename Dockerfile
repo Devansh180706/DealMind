@@ -35,3 +35,4 @@ HEALTHCHECK CMD curl --fail http://localhost:8080/_stcore/health || exit 1
 
 # Launch Streamlit app
 CMD ["streamlit", "run", "app.py", "--server.port=8080", "--server.address=0.0.0.0"]
+
