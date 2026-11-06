@@ -1,0 +1,39 @@
+{
+  "dataset_summary": {
+    "total_deals": 10,
+    "closed_won": 4,
+    "closed_lost": 2,
+    "open": 4
+  },
+  "planted_patterns": [
+    {
+      "pattern_name": "CFO Pricing Objection Resolution (ROI Strategy)",
+      "description": "When a CFO raises a pricing/budget objection, presenting an ROI case study/financial breakdown yields an 80%+ win rate (Acme Corp, Nexus Health, Vanguard Logistics won with ROI; Omni Finance lost when rep offered only a discount without ROI).",
+      "evidence_deals": [
+        "acme-corp",
+        "nexus-health",
+        "vanguard-logistics",
+        "omni-finance"
+      ],
+      "winning_action": "Share 3-year ROI financial model / case study within 48-72 hours of objection."
+    },
+    {
+      "pattern_name": "Legal Review Stall Risk",
+      "description": "Deals that stay in Legal Review for > 14 days without an active redline cycle have high probability of stalling or dying due to shifting corporate priorities (Titan Energy lost after 45 days in legal; Horizon Telecom currently at 18 days with overdue commitment).",
+      "evidence_deals": [
+        "titan-energy",
+        "horizon-telecom"
+      ],
+      "preventive_action": "Mandate maximum 48-hour SLA on redlines and proactively schedule alignment calls between general counsels."
+    },
+    {
+      "pattern_name": "Silent Champion Risk",
+      "description": "When the primary champion or economic buyer goes uncontacted or unresponsive for 14+ days, deal progression drops sharply (Summit BioTech champion silent for 18 days; Titan Energy champion went silent before cancellation).",
+      "evidence_deals": [
+        "summit-biotech",
+        "titan-energy"
+      ],
+      "preventive_action": "Trigger executive check-in or deliver overdue commitments immediately."
+    }
+  ]
+}

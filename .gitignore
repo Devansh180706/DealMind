@@ -1,0 +1,19 @@
+# Environment secrets
+.env
+APIKeys.env
+
+# Python cache & virtual environments
+__pycache__/
+*.pyc
+.venv/
+venv/
+*.egg-info/
+dist/
+build/
+
+# IDE & OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
