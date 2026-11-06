@@ -1,15 +1,16 @@
 """
-Deal Intelligence Agent — Streamlit Web Application
+DealMind — Deal Intelligence Agent | Streamlit Web Application
 5 Core Views:
 1. 📊 Deal Pipeline (with risk badges & metrics)
 2. ⚡ Brief Me (with Memory ON/OFF comparison toggle & Memories Used citations drawer)
 3. 📝 Log a Call (live transcript extraction, contradiction detection, & memory retention)
-4. 🚨 Risk Alerts (overdue commitments, silent stakeholders, legal stalls)
+4. 🚨 Active Alerts (overdue commitments, silent stakeholders, legal stalls)
 5. 🧠 Playbook Insights (cross-deal learning powered by Hindsight reflect & Ground Truth validation)
 """
 
 import os
 import json
+import html
 from pathlib import Path
 from datetime import datetime
 import streamlit as st
@@ -20,7 +21,7 @@ from agent.alerts import scan_all_deals_for_alerts, scan_deal_for_alerts
 from agent.playbook import get_current_learned_insights, record_deal_closure_and_learn, verify_against_ground_truth
 from agent.memory import recall_deal, recall_playbook
 
-# Page configuration
+# ── Page configuration ──────────────────────────────────────────────────────
 st.set_page_config(
     page_title="DealMind | Deal Intelligence Agent",
     page_icon="💼",
@@ -37,34 +38,27 @@ def load_deals():
             return json.load(f)
     return []
 
-deals = load_deals()
+deals    = load_deals()
 deal_map = {d["deal_id"]: d for d in deals}
 open_deals = [d for d in deals if d.get("status") == "Open"]
-won_deals = [d for d in deals if d.get("status") == "Closed Won"]
+won_deals  = [d for d in deals if d.get("status") == "Closed Won"]
 lost_deals = [d for d in deals if d.get("status") == "Closed Lost"]
 
-# Custom Styling
+# ── Custom CSS ───────────────────────────────────────────────────────────────
 st.markdown("""
 <style>
-    .main-header { font-size: 2.2rem; font-weight: 700; color: #1E293B; margin-bottom: 0.2rem; }
-    .sub-header { font-size: 1.05rem; color: #64748B; margin-bottom: 1.5rem; }
-    .metric-card { background-color: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 8px; padding: 16px; }
-    .alert-critical { background-color: #FEE2E2; border-left: 5px solid #EF4444; padding: 12px; border-radius: 4px; margin-bottom: 10px; }
-    .alert-high { background-color: #FEF3C7; border-left: 5px solid #F59E0B; padding: 12px; border-radius: 4px; margin-bottom: 10px; }
-    .memory-badge { background-color: #EEF2FF; border: 1px solid #C7D2FE; color: #3730A3; padding: 2px 8px; border-radius: 12px; font-size: 0.85rem; font-weight: 600; }
+    .main-header  { font-size: 2.2rem; font-weight: 700; color: #1E293B; margin-bottom: 0.2rem; }
+    .sub-header   { font-size: 1.05rem; color: #64748B; margin-bottom: 1.5rem; }
+    .metric-card  { background-color: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 8px; padding: 16px; }
+    .memory-badge { background-color: #EEF2FF; border: 1px solid #C7D2FE; color: #3730A3;
+                    padding: 2px 8px; border-radius: 12px; font-size: 0.85rem; font-weight: 600; }
 </style>
 """, unsafe_allow_html=True)
 
-# Sidebar Navigation
+# ── Sidebar — branding only (no nav radio) ───────────────────────────────────
 st.sidebar.image("https://img.icons8.com/isometric/100/brain.png", width=64)
 st.sidebar.title("DealMind")
 st.sidebar.caption("Autonomous Deal Intelligence • Powered by Hindsight & Groq")
-
-nav = st.sidebar.radio(
-    "Navigation",
-    ["📊 Deal Pipeline", "⚡ Brief Me (Copilot)", "📝 Log a Call", "🚨 Active Alerts", "🧠 Playbook Insights"],
-)
-
 st.sidebar.divider()
 st.sidebar.markdown("**HackwithHyderabad 3.0**")
 st.sidebar.info(
@@ -72,50 +66,52 @@ st.sidebar.info(
     "to witness Hindsight memory transform generic advice into precision deal intelligence."
 )
 
+# ── Top-level tab navigation ─────────────────────────────────────────────────
+tab_pipeline, tab_brief, tab_log, tab_alerts, tab_playbook = st.tabs([
+    "📊 Deal Pipeline",
+    "⚡ Brief Me",
+    "📝 Log a Call",
+    "🚨 Active Alerts",
+    "🧠 Playbook Insights",
+])
+
 
 # =============================================================================
 # 1. DEAL PIPELINE
 # =============================================================================
-if nav == "📊 Deal Pipeline":
+with tab_pipeline:
     st.markdown('<div class="main-header">Deal Pipeline & Intelligence Status</div>', unsafe_allow_html=True)
     st.markdown('<div class="sub-header">Active accounts monitored across isolated Hindsight memory banks.</div>', unsafe_allow_html=True)
 
-    # Metrics
     c1, c2, c3, c4 = st.columns(4)
-    total_val = sum(int(d["deal_size"].replace("$", "").replace(",", "")) for d in deals if "deal_size" in d)
-    open_deals = [d for d in deals if d.get("status") == "Open"]
-    won_deals = [d for d in deals if d.get("status") == "Closed Won"]
-    lost_deals = [d for d in deals if d.get("status") == "Closed Lost"]
-
+    total_val = sum(
+        int(d["deal_size"].replace("$", "").replace(",", ""))
+        for d in deals if "deal_size" in d
+    )
     c1.metric("Monitored Pipeline", f"${total_val:,}")
-    c2.metric("Open Active Deals", len(open_deals))
-    c3.metric("Closed Won", len(won_deals))
-    c4.metric("Closed Lost", len(lost_deals))
+    c2.metric("Open Active Deals",  len(open_deals))
+    c3.metric("Closed Won",         len(won_deals))
+    c4.metric("Closed Lost",        len(lost_deals))
 
     st.markdown("---")
 
     for d in deals:
         status = d.get("status", "Open")
-        color = "#10B981" if status == "Closed Won" else ("#EF4444" if status == "Closed Lost" else "#3B82F6")
-        
         with st.expander(f"{d['company_name']} ({d['deal_size']}) — Stage: {status}"):
             cols = st.columns([2, 2, 2])
             cols[0].markdown(f"**Industry:** {d.get('industry', 'N/A')}")
             cols[0].markdown(f"**Competitor:** {d.get('competitor', 'None')}")
             cols[1].markdown(f"**Memory Bank:** `deal-{d['deal_id']}`")
             cols[1].markdown(f"**Close Date:** {d.get('close_date', 'Pending')}")
-            
-            # Key stakeholders
             sh_list = [f"{s['name']} ({s['role']})" for s in d.get("key_stakeholders", [])]
             cols[2].markdown(f"**Stakeholders:** {', '.join(sh_list)}")
-            
             st.markdown(f"**Total Logged Interactions:** {len(d.get('interactions', []))}")
 
 
 # =============================================================================
 # 2. BRIEF ME (THE HERO DEMO FEATURE)
 # =============================================================================
-elif nav == "⚡ Brief Me (Copilot)":
+with tab_brief:
     st.markdown('<div class="main-header">⚡ Pre-Call Briefing (Copilot)</div>', unsafe_allow_html=True)
     st.markdown(
         '<div class="sub-header">Executive preparation grounded in Hindsight persistent memory.</div>',
@@ -154,7 +150,6 @@ elif nav == "⚡ Brief Me (Copilot)":
                 st.success("✅ Brief successfully grounded in Vectorize Hindsight memory!")
             else:
                 st.warning("⚠️ Memory is OFF: Advice is purely generic.")
-            
             st.markdown(brief_res.brief_markdown)
 
         with right_col:
@@ -162,7 +157,7 @@ elif nav == "⚡ Brief Me (Copilot)":
             st.caption(f"Bank: `deal-{selected_deal_id}` + `company-playbook`")
 
             if brief_res.memories_used:
-                for idx, mem in enumerate(brief_res.memories_used, start=1):
+                for mem in brief_res.memories_used:
                     with st.container():
                         st.markdown(
                             f"<span class='memory-badge'>{mem.get('citation')}</span> "
@@ -177,10 +172,11 @@ elif nav == "⚡ Brief Me (Copilot)":
 # =============================================================================
 # 3. LOG A CALL & LIVE EXTRACTION
 # =============================================================================
-elif nav == "📝 Log a Call":
+with tab_log:
     st.markdown('<div class="main-header">📝 Log a Call & Extract Intelligence</div>', unsafe_allow_html=True)
     st.markdown(
-        '<div class="sub-header">Paste meeting transcripts or notes. Automatically extracts structured facts, detects contradictions, and retains into Hindsight.</div>',
+        '<div class="sub-header">Paste meeting transcripts or notes. Automatically extracts structured facts, '
+        'detects contradictions, and retains into Hindsight.</div>',
         unsafe_allow_html=True
     )
 
@@ -193,11 +189,14 @@ elif nav == "📝 Log a Call":
 
     c_date, c_type = st.columns(2)
     interaction_date = c_date.date_input("Meeting Date", datetime(2026, 11, 6)).strftime("%Y-%m-%d")
-    interaction_type = c_type.selectbox("Interaction Type", ["Discovery Call", "Demo & Pricing", "Executive Review", "Negotiation", "Email Check-in"])
+    interaction_type = c_type.selectbox(
+        "Interaction Type",
+        ["Discovery Call", "Demo & Pricing", "Executive Review", "Negotiation", "Email Check-in"]
+    )
 
     sample_default = (
-        f"Marcus Wright and CFO Sarah Connor joined today. Sarah stated their budget is strictly $75k. "
-        f"Alex committed to email the customized ROI case study by Friday. CloudFort was mentioned."
+        "Marcus Wright and CFO Sarah Connor joined today. Sarah stated their budget is strictly $75k. "
+        "Alex committed to email the customized ROI case study by Friday. CloudFort was mentioned."
     )
     transcript_input = st.text_area(
         "Meeting Notes / Transcript:",
@@ -231,66 +230,81 @@ elif nav == "📝 Log a Call":
                 st.markdown("#### 🧠 Plain-English Memories Retained")
                 if meta.get("contradiction_detected"):
                     st.error("⚡ Contradiction / Budget Change Detected & Recorded!")
-                
                 for s in sentences:
                     st.markdown(f"- {s}")
 
 
 # =============================================================================
-# 4. ACTIVE ALERTS
+# 4. ACTIVE ALERTS  — uses Streamlit-native components (no raw HTML injection)
 # =============================================================================
-elif nav == "🚨 Active Alerts":
+with tab_alerts:
     st.markdown('<div class="main-header">🚨 Proactive Deal Risk Alerts</div>', unsafe_allow_html=True)
     st.markdown(
-        '<div class="sub-header">Continuous scanning of Hindsight memory for overdue commitments, silent champions, and stage stalls.</div>',
+        '<div class="sub-header">Continuous scanning of Hindsight memory for overdue commitments, '
+        'silent champions, and stage stalls.</div>',
         unsafe_allow_html=True
     )
 
-    all_alerts = scan_all_deals_for_alerts(deals, current_date="2026-11-06")
+    with st.spinner("Scanning all deal memory banks for risks..."):
+        all_alerts = scan_all_deals_for_alerts(deals, current_date="2026-11-06")
 
     crit_count = sum(1 for a in all_alerts if a.severity == "CRITICAL")
     high_count = sum(1 for a in all_alerts if a.severity == "HIGH")
 
     a1, a2, a3 = st.columns(3)
     a1.metric("Total Active Alerts", len(all_alerts))
-    a2.metric("Critical Blockers", crit_count)
-    a3.metric("High Risks", high_count)
+    a2.metric("Critical Blockers",   crit_count)
+    a3.metric("High Risks",          high_count)
 
     st.markdown("---")
 
-    for alert in all_alerts:
-        alert_class = "alert-critical" if alert.severity == "CRITICAL" else "alert-high"
-        st.markdown(f"""
-        <div class="{alert_class}">
-            <strong style="font-size: 1.1rem;">[{alert.severity}] {alert.company_name}: {alert.title}</strong><br/>
-            <span>{alert.description}</span><br/>
-            <small><b>Evidence from Memory:</b> <i>"{alert.evidence_memory}"</i></small><br/>
-            <small><b>Recommended Action:</b> {alert.suggested_action}</small>
-        </div>
-        """, unsafe_allow_html=True)
+    if not all_alerts:
+        st.success("✅ No active risk alerts found across all deal accounts.")
+    else:
+        for alert in all_alerts:
+            is_critical = alert.severity == "CRITICAL"
+            icon  = "🔴" if is_critical else "🟡"
+            label = f"{icon} **[{alert.severity}]  {alert.company_name} — {alert.title}**"
+
+            with st.expander(label, expanded=is_critical):
+                # Description banner
+                if is_critical:
+                    st.error(str(alert.description))
+                else:
+                    st.warning(str(alert.description))
+
+                # Evidence from memory
+                st.markdown("**🧠 Evidence from Memory:**")
+                st.caption(str(alert.evidence_memory))
+
+                # Recommended action
+                st.info(f"**💡 Recommended Action:** {alert.suggested_action}")
 
 
 # =============================================================================
 # 5. PLAYBOOK INSIGHTS (CROSS-DEAL LEARNING)
 # =============================================================================
-elif nav == "🧠 Playbook Insights":
+with tab_playbook:
     st.markdown('<div class="main-header">🧠 Autonomous Playbook Insights</div>', unsafe_allow_html=True)
     st.markdown(
         '<div class="sub-header">Cross-deal reflection powered by Hindsight reflect() and Ground Truth validation.</div>',
         unsafe_allow_html=True
     )
 
-    tab_insights, tab_eval, tab_close = st.tabs(["💡 Learned Intelligence", "🎯 Ground Truth Verification", "🏆 Close Deal & Learn"])
+    sub_insights, sub_eval, sub_close = st.tabs([
+        "💡 Learned Intelligence",
+        "🎯 Ground Truth Verification",
+        "🏆 Close Deal & Learn",
+    ])
 
-    with tab_insights:
+    with sub_insights:
         st.markdown("### Cross-Deal Playbook (Synthesized by Hindsight `reflect()`)")
         if st.button("🔄 Refresh Playbook Reflection", type="secondary"):
             st.cache_data.clear()
-
         insights = get_current_learned_insights()
         st.info(insights)
 
-    with tab_eval:
+    with sub_eval:
         st.markdown("### Ground Truth Pattern Discovery")
         st.caption("Verifies whether the agent independently discovered the planted patterns in the synthetic dataset.")
 
@@ -310,7 +324,7 @@ elif nav == "🧠 Playbook Insights":
                 st.markdown(f"- *Winning/Preventive action:* {item['expected_insight']}")
                 st.markdown("---")
 
-    with tab_close:
+    with sub_close:
         st.markdown("### Record Deal Outcome to Trigger Learning Loop")
         if not open_deals:
             st.info("No open deals remaining to close.")
@@ -321,13 +335,13 @@ elif nav == "🧠 Playbook Insights":
                     options=[d["deal_id"] for d in open_deals],
                     format_func=lambda x: f"{deal_map[x]['company_name']} ({deal_map[x].get('deal_size', 'N/A')})"
                 )
-                deal_info = deal_map.get(deal_to_close, {})
-                deal_name = deal_info.get("company_name", "")
-                outcome_val = st.radio("Outcome", ["Closed Won", "Closed Lost"], horizontal=True)
-                deal_val = st.text_input("Deal Value", value=deal_info.get("deal_size", "$75,000"))
-                objection_text = st.text_input("Key Objection Overcome / Faced", value="Pricing pushback from CFO")
-                tactic_text = st.text_input("Decisive Tactic Applied", value="Provided 3-year ROI breakdown and customer reference")
-                notes_val = st.text_area("Debrief Notes", value="CFO signed contract immediately following ROI proof presentation.")
+                deal_info_close = deal_map.get(deal_to_close, {})
+                deal_name       = deal_info_close.get("company_name", "")
+                outcome_val     = st.radio("Outcome", ["Closed Won", "Closed Lost"], horizontal=True)
+                deal_val        = st.text_input("Deal Value", value=deal_info_close.get("deal_size", "$75,000"))
+                objection_text  = st.text_input("Key Objection Overcome / Faced", value="Pricing pushback from CFO")
+                tactic_text     = st.text_input("Decisive Tactic Applied", value="Provided 3-year ROI breakdown and customer reference")
+                notes_val       = st.text_area("Debrief Notes", value="CFO signed contract immediately following ROI proof presentation.")
 
                 submitted = st.form_submit_button("Record Retrospective & Trigger Hindsight Reflect", type="primary")
                 if submitted and deal_to_close:
@@ -344,4 +358,3 @@ elif nav == "🧠 Playbook Insights":
                     st.success("🎉 Deal Retrospective retained to company-playbook!")
                     st.markdown("#### New Synthesized Playbook Reflection:")
                     st.write(record_res["reflection_insights"])
-
