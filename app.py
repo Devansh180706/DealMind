@@ -39,6 +39,9 @@ def load_deals():
 
 deals = load_deals()
 deal_map = {d["deal_id"]: d for d in deals}
+open_deals = [d for d in deals if d.get("status") == "Open"]
+won_deals = [d for d in deals if d.get("status") == "Closed Won"]
+lost_deals = [d for d in deals if d.get("status") == "Closed Lost"]
 
 # Custom Styling
 st.markdown("""
@@ -309,27 +312,36 @@ elif nav == "🧠 Playbook Insights":
 
     with tab_close:
         st.markdown("### Record Deal Outcome to Trigger Learning Loop")
-        with st.form("close_deal_form"):
-            deal_to_close = st.selectbox("Select Open Deal to Close:", [d["deal_id"] for d in open_deals])
-            deal_name = deal_map[deal_to_close]["company_name"]
-            outcome_val = st.radio("Outcome", ["Closed Won", "Closed Lost"], horizontal=True)
-            deal_val = st.text_input("Deal Value", value=deal_map[deal_to_close].get("deal_size", "$75,000"))
-            objection_text = st.text_input("Key Objection Overcome / Faced", value="Pricing pushback from CFO")
-            tactic_text = st.text_input("Decisive Tactic Applied", value="Provided 3-year ROI breakdown and customer reference")
-            notes_val = st.text_area("Debrief Notes", value="CFO signed contract immediately following ROI proof presentation.")
+        if not open_deals:
+            st.info("No open deals remaining to close.")
+        else:
+            with st.form("close_deal_form"):
+                deal_to_close = st.selectbox(
+                    "Select Open Deal to Close:",
+                    options=[d["deal_id"] for d in open_deals],
+                    format_func=lambda x: f"{deal_map[x]['company_name']} ({deal_map[x].get('deal_size', 'N/A')})"
+                )
+                deal_info = deal_map.get(deal_to_close, {})
+                deal_name = deal_info.get("company_name", "")
+                outcome_val = st.radio("Outcome", ["Closed Won", "Closed Lost"], horizontal=True)
+                deal_val = st.text_input("Deal Value", value=deal_info.get("deal_size", "$75,000"))
+                objection_text = st.text_input("Key Objection Overcome / Faced", value="Pricing pushback from CFO")
+                tactic_text = st.text_input("Decisive Tactic Applied", value="Provided 3-year ROI breakdown and customer reference")
+                notes_val = st.text_area("Debrief Notes", value="CFO signed contract immediately following ROI proof presentation.")
 
-            submitted = st.form_submit_button("Record Retrospective & Trigger Hindsight Reflect", type="primary")
-            if submitted:
-                with st.spinner("Recording retrospective to company-playbook and reflecting..."):
-                    record_res = record_deal_closure_and_learn(
-                        deal_id=deal_to_close,
-                        company_name=deal_name,
-                        outcome=outcome_val,
-                        deal_size=deal_val,
-                        key_objection=objection_text,
-                        decisive_tactic=tactic_text,
-                        notes=notes_val
-                    )
-                st.success("🎉 Deal Retrospective retained to company-playbook!")
-                st.markdown("#### New Synthesized Playbook Reflection:")
-                st.write(record_res["reflection_insights"])
+                submitted = st.form_submit_button("Record Retrospective & Trigger Hindsight Reflect", type="primary")
+                if submitted and deal_to_close:
+                    with st.spinner("Recording retrospective to company-playbook and reflecting..."):
+                        record_res = record_deal_closure_and_learn(
+                            deal_id=deal_to_close,
+                            company_name=deal_name,
+                            outcome=outcome_val,
+                            deal_size=deal_val,
+                            key_objection=objection_text,
+                            decisive_tactic=tactic_text,
+                            notes=notes_val
+                        )
+                    st.success("🎉 Deal Retrospective retained to company-playbook!")
+                    st.markdown("#### New Synthesized Playbook Reflection:")
+                    st.write(record_res["reflection_insights"])
+
