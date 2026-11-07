@@ -4,34 +4,88 @@ Manages login state and session-level admin context.
 """
 
 import streamlit as st
+import streamlit.components.v1 as components
 from admin.firebase_config import sign_in_with_email_password, send_password_reset
 from admin.admin_manager import get_admin_by_uid, update_last_login, ROLES
 
 
 SESSION_KEY = "dealmind_admin_session"
 
-# JavaScript injected once to prevent browser password-manager popups
-# (Chrome's "Use strong password" / Google Password Manager suggestion).
-_DISABLE_AUTOCOMPLETE_JS = """
-<script>
-(function() {
-    function patchInputs() {
-        document.querySelectorAll('input[type="password"]').forEach(function(el) {
-            el.setAttribute('autocomplete', 'off');
+
+def _inject_autocomplete_fix():
+    """
+    Inject JavaScript via a zero-height component iframe to block
+    browser password manager popups (Google Password Manager, LastPass etc.)
+
+    WHY components.html and NOT st.markdown(unsafe_allow_html=True):
+      Browsers do NOT execute <script> tags that are set via innerHTML
+      (which is what st.markdown uses internally). Scripts only execute
+      when injected into the DOM via createElement('script') or inside
+      an actual <script>-bearing document — which is exactly what
+      st.components.v1.html does (renders a real srcdoc iframe).
+
+    The fix uses the 'readonly + on-focus remove' trick:
+      1. Set readonly on password/email fields → Chrome skips autofill
+      2. Remove readonly on first focus so the user can still type
+      3. Set autocomplete="new-password" / "off" as extra hints
+    """
+    components.html("""
+    <!DOCTYPE html>
+    <html>
+    <head></head>
+    <body>
+    <script>
+    (function() {
+        var fixed = new WeakSet();
+
+        function lockField(el, isPassword) {
+            if (fixed.has(el)) return;
+            fixed.add(el);
+
+            // Set readonly to block Chrome autofill before user touches it
+            el.setAttribute('readonly', 'readonly');
+            el.setAttribute('autocomplete', isPassword ? 'new-password' : 'off');
             el.setAttribute('data-lpignore', 'true');
             el.setAttribute('data-form-type', 'other');
-        });
-        document.querySelectorAll('input[type="email"], input[type="text"]').forEach(function(el) {
-            el.setAttribute('autocomplete', 'off');
-        });
-    }
-    // Patch immediately and watch for Streamlit re-renders
-    patchInputs();
-    var observer = new MutationObserver(patchInputs);
-    observer.observe(document.body, { childList: true, subtree: true });
-})();
-</script>
-"""
+
+            // Remove readonly the moment the user focuses (so they can type)
+            el.addEventListener('focus', function handler() {
+                el.removeAttribute('readonly');
+                el.removeEventListener('focus', handler);
+            }, true);
+        }
+
+        function applyFixes() {
+            var doc;
+            try { doc = window.parent.document; } catch(e) { return; }
+
+            doc.querySelectorAll('input[type="password"]').forEach(function(el) {
+                lockField(el, true);
+            });
+            doc.querySelectorAll('input[type="text"], input[type="email"], input:not([type])').forEach(function(el) {
+                lockField(el, false);
+            });
+        }
+
+        // Run immediately
+        applyFixes();
+
+        // Run every 600 ms to catch Streamlit re-renders that recreate inputs
+        setInterval(applyFixes, 600);
+
+        // Also watch for new nodes added by Streamlit
+        try {
+            var observer = new MutationObserver(applyFixes);
+            observer.observe(window.parent.document.body, {
+                childList: true,
+                subtree: true
+            });
+        } catch(e) {}
+    })();
+    </script>
+    </body>
+    </html>
+    """, height=0, scrolling=False)
 
 
 def is_logged_in() -> bool:
@@ -102,52 +156,36 @@ def require_permission(permission: str):
 
 def render_login_page():
     """Render the full-page admin login form."""
-    # Inject autocomplete-disabling script FIRST (before any form renders)
-    st.markdown(_DISABLE_AUTOCOMPLETE_JS, unsafe_allow_html=True)
 
+    # ── Inject autocomplete/password-manager blocker ──────────────────────────
+    # Must use components.html (not st.markdown) — only components.html
+    # renders a real iframe where <script> tags actually execute.
+    _inject_autocomplete_fix()
+
+    # ── Page chrome styles ────────────────────────────────────────────────────
     st.markdown("""
     <style>
-        /* hide default streamlit chrome while on the login page */
         #MainMenu { visibility: hidden; }
         footer    { visibility: hidden; }
         header    { visibility: hidden; }
 
         .login-box {
             max-width: 420px;
-            margin: 60px auto 0 auto;
+            margin: 20px auto 0 auto;
             background: #FFFFFF;
             border: 1px solid #E2E8F0;
             border-radius: 16px;
             padding: 40px 36px 32px 36px;
             box-shadow: 0 4px 24px rgba(0,0,0,0.08);
         }
-        .login-logo {
-            text-align: center;
-            font-size: 2.4rem;
-            margin-bottom: 4px;
-        }
-        .login-title {
-            text-align: center;
-            font-size: 1.5rem;
-            font-weight: 700;
-            color: #1E293B;
-            margin-bottom: 2px;
-        }
-        .login-sub {
-            text-align: center;
-            font-size: 0.9rem;
-            color: #64748B;
-            margin-bottom: 28px;
-        }
-        .reset-info {
-            background: #F0F9FF;
-            border: 1px solid #BAE6FD;
-            border-radius: 8px;
-            padding: 12px 14px;
-            font-size: 0.85rem;
-            color: #0369A1;
-            margin-bottom: 12px;
-        }
+        .login-logo  { text-align: center; font-size: 2.4rem; margin-bottom: 4px; }
+        .login-title { text-align: center; font-size: 1.5rem; font-weight: 700;
+                       color: #1E293B; margin-bottom: 2px; }
+        .login-sub   { text-align: center; font-size: 0.9rem; color: #64748B;
+                       margin-bottom: 28px; }
+        .reset-info  { background: #F0F9FF; border: 1px solid #BAE6FD;
+                       border-radius: 8px; padding: 12px 14px; font-size: 0.85rem;
+                       color: #0369A1; margin-bottom: 12px; line-height: 1.6; }
     </style>
     """, unsafe_allow_html=True)
 
@@ -156,15 +194,28 @@ def render_login_page():
         st.markdown('<div class="login-box">', unsafe_allow_html=True)
         st.markdown('<div class="login-logo">💼</div>', unsafe_allow_html=True)
         st.markdown('<div class="login-title">DealMind Admin</div>', unsafe_allow_html=True)
-        st.markdown('<div class="login-sub">Deal Intelligence Platform · Restricted Access</div>', unsafe_allow_html=True)
+        st.markdown(
+            '<div class="login-sub">Deal Intelligence Platform · Restricted Access</div>',
+            unsafe_allow_html=True,
+        )
 
         tab_login, tab_reset = st.tabs(["🔐 Sign In", "🔑 Reset Password"])
 
+        # ── Sign In tab ───────────────────────────────────────────────────────
         with tab_login:
             with st.form("admin_login_form", clear_on_submit=False):
-                email    = st.text_input("Email Address", placeholder="admin@dealmind.ai")
-                password = st.text_input("Password", type="password", placeholder="Enter your password")
-                submitted = st.form_submit_button("Sign In →", type="primary", use_container_width=True)
+                email = st.text_input(
+                    "Email Address",
+                    placeholder="you@example.com",   # generic — avoids browser pre-fill confusion
+                )
+                password = st.text_input(
+                    "Password",
+                    type="password",
+                    placeholder="Enter your password",
+                )
+                submitted = st.form_submit_button(
+                    "Sign In →", type="primary", use_container_width=True
+                )
 
             if submitted:
                 if not email or not password:
@@ -172,7 +223,7 @@ def render_login_page():
                 else:
                     with st.spinner("Authenticating…"):
                         try:
-                            admin = login(email, password)
+                            admin = login(email.strip(), password)
                             st.success(f"Welcome back, **{admin['name']}**! Redirecting…")
                             st.rerun()
                         except ValueError as e:
@@ -180,32 +231,37 @@ def render_login_page():
                         except Exception as e:
                             st.error(f"⚠️ Unexpected error: {e}")
 
+        # ── Reset Password tab ────────────────────────────────────────────────
         with tab_reset:
             st.markdown("""
             <div class="reset-info">
             📧 <strong>How password reset works:</strong><br>
-            Enter your registered email below and click <em>Send Reset Link</em>.
-            Firebase will send a password-reset email directly to that address.
-            Click the link in the email, set your new password, then return here to sign in.
-            The link expires in <strong>1 hour</strong>.
+            1. Enter your registered email below and click <em>Send Reset Link</em>.<br>
+            2. Firebase emails a reset link <strong>directly to that address</strong> (arrives in seconds).<br>
+            3. Click the link in the email → set your new password → come back here to sign in.<br>
+            ⏱️ The reset link is valid for <strong>1 hour</strong> and can only be used once.
             </div>
             """, unsafe_allow_html=True)
 
             with st.form("reset_form"):
-                reset_email = st.text_input("Registered Email", placeholder="admin@dealmind.ai")
-                reset_btn = st.form_submit_button("Send Reset Link", use_container_width=True)
+                reset_email = st.text_input(
+                    "Registered Email", placeholder="you@example.com"
+                )
+                reset_btn = st.form_submit_button(
+                    "Send Reset Link", use_container_width=True
+                )
 
             if reset_btn:
                 if not reset_email:
                     st.warning("Please enter your email address.")
                 else:
                     try:
-                        send_password_reset(reset_email)
+                        send_password_reset(reset_email.strip())
                         st.success(
                             f"✅ Reset email sent to **{reset_email}**.\n\n"
                             "Check your inbox (and spam folder). "
-                            "Click the link in the email to set a new password. "
-                            "The link is valid for **1 hour**."
+                            "Click the link to set a new password. "
+                            "The link expires in **1 hour**."
                         )
                     except ValueError as e:
                         st.error(f"🚫 {e}")

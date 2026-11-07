@@ -185,6 +185,47 @@ The script creates Firebase Auth accounts + Firestore documents automatically.
 
 ---
 
+### ✅ Full Walkthrough — Adding a User Directly via Firebase (Both Steps Required)
+
+> **IMPORTANT:** Two separate steps are needed — one in Firebase Auth, one in Firestore.
+> If you only do Step A (Auth), login will fail with "not registered as administrator".
+> If you only do Step B (Firestore), login will fail because Firebase can't authenticate.
+
+**STEP A — Create the user account in Firebase Authentication**
+
+1. Go to [console.firebase.google.com](https://console.firebase.google.com) → select your project
+2. Left sidebar → **Authentication** → **Users** tab
+3. Click **"Add user"** button (top right)
+4. Enter their **email address** + a **temporary password** → click **"Add user"**
+5. The new user appears in the list — **copy their UID** (long string like `Xk7mN2qPabcdef123`)
+
+**STEP B — Add their role document in Firestore Database**
+
+1. Left sidebar → **Firestore Database** → find the **"admins"** collection
+2. Click **"+ Add document"**
+3. In the **Document ID** field → **paste the UID** from Step A (do NOT use Auto-ID)
+4. Add all 7 fields by clicking **"+ Add field"** for each:
+
+```
+Field name   │ Type    │ Value to enter
+─────────────┼─────────┼────────────────────────────────
+email        │ string  │ ravi@yourcompany.com
+name         │ string  │ Ravi Kumar
+role         │ string  │ admin          ← or:  viewer
+is_active    │ boolean │ true
+created_at   │ string  │ 2026-11-07T10:00:00+00:00
+last_login   │ null    │ (select null type, leave empty)
+login_count  │ number  │ 0
+```
+
+5. Click **"Save"**
+
+**STEP C — Share credentials with the new user**
+- Tell them their **email** + **temporary password**
+- Ask them to open the DealMind login page → **🔑 Reset Password** tab → enter their email → set a permanent password
+
+---
+
 ### How to CHANGE an existing user's role
 
 **Option A — Via Admin Panel (In-app)**

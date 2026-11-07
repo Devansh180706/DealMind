@@ -188,11 +188,15 @@ def render_brief(tab):
 
         if st.button("Generate Pre-Call Brief", type="primary"):
             with st.spinner("Querying Hindsight memory banks and synthesizing brief..."):
-                brief_res = generate_pre_call_brief(
-                    deal_id=selected_deal_id,
-                    company_name=deal_obj["company_name"],
-                    memory_mode=mode_val,
-                )
+                try:
+                    brief_res = generate_pre_call_brief(
+                        deal_id=selected_deal_id,
+                        company_name=deal_obj["company_name"],
+                        memory_mode=mode_val,
+                    )
+                except (RuntimeError, Exception) as e:
+                    st.error(f"⚠️ Could not generate brief: {e}")
+                    st.stop()
 
             left_col, right_col = st.columns([3, 2])
 
@@ -259,12 +263,16 @@ def render_log(tab):
 
         if st.button("Extract Facts & Retain into Hindsight", type="primary"):
             with st.spinner("Extracting structured facts and updating memory..."):
-                extracted, sentences, meta = extract_facts_from_transcript(
-                    transcript=transcript_input,
-                    deal_id=selected_deal,
-                    company_name=deal_info["company_name"],
-                    date=interaction_date
-                )
+                try:
+                    extracted, sentences, meta = extract_facts_from_transcript(
+                        transcript=transcript_input,
+                        deal_id=selected_deal,
+                        company_name=deal_info["company_name"],
+                        date=interaction_date
+                    )
+                except (RuntimeError, Exception) as e:
+                    st.error(f"⚠️ Could not extract facts: {e}")
+                    st.stop()
 
             if meta.get("status") == "skipped":
                 st.warning("⚠️ Duplicate transcript detected via SHA-256 hash. Skipped duplicate ingestion.")
@@ -298,8 +306,18 @@ def render_alerts(tab):
             unsafe_allow_html=True
         )
 
+        all_alerts = []
         with st.spinner("Scanning all deal memory banks for risks..."):
-            all_alerts = scan_all_deals_for_alerts(deals, current_date="2026-11-06")
+            try:
+                all_alerts = scan_all_deals_for_alerts(deals, current_date="2026-11-06")
+            except RuntimeError as e:
+                st.warning(
+                    f"⚠️ Could not scan alerts — Hindsight memory client encountered an async "
+                    f"context error: `{e}`. This usually means the HINDSIGHT_API_KEY is not set "
+                    "or the memory service is unavailable. Set the key in your `.env` file and restart."
+                )
+            except Exception as e:
+                st.warning(f"⚠️ Could not scan alerts: {e}")
 
         crit_count = sum(1 for a in all_alerts if a.severity == "CRITICAL")
         high_count = sum(1 for a in all_alerts if a.severity == "HIGH")
@@ -351,8 +369,11 @@ def render_playbook(tab):
             st.markdown("### Cross-Deal Playbook (Synthesized by Hindsight `reflect()`)")
             if st.button("🔄 Refresh Playbook Reflection", type="secondary"):
                 st.cache_data.clear()
-            insights = get_current_learned_insights()
-            st.info(insights)
+            try:
+                insights = get_current_learned_insights()
+                st.info(insights)
+            except (RuntimeError, Exception) as e:
+                st.warning(f"⚠️ Could not load playbook insights: {e}")
 
         with sub_eval:
             st.markdown("### Ground Truth Pattern Discovery")
