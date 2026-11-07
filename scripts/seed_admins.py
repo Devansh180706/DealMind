@@ -10,15 +10,27 @@ Requirements:
     - FIREBASE_API_KEY set in .env
 
 The script will:
-1. Create each admin in Firebase Authentication (email/password)
+1. Create each user in Firebase Authentication (email/password)
 2. Create the corresponding Firestore document in the 'admins' collection
+
+WHO IS THE SUPER ADMIN?
+  The "super admin" of this system is whoever owns the Firebase project —
+  i.e., the Google account (venkatasaip52@gmail.com) used to create the Firebase
+  project. That account has full control via the Firebase Console and can:
+    - Reset any user's password
+    - Delete or disable any user
+    - View all Firestore data
+  Inside the app, all 'admin' role users share the same permissions.
+
+ROLES:
+  admin  — Full access to all tabs + can manage the admin/viewer roster
+  viewer — Read-only: can only see Deal Pipeline and Active Alerts
 """
 
 import sys
 import os
 from pathlib import Path
 
-# Allow running from project root
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from dotenv import load_dotenv
@@ -47,37 +59,38 @@ if not firebase_admin._apps:
 
 db = firestore.client()
 
-# ── Pre-seeded admins ─────────────────────────────────────────────────────────
-# Change these credentials before deploying to production!
+# ── Pre-seeded users ──────────────────────────────────────────────────────────
+# IMPORTANT: Change these passwords immediately after first login!
+# Use the Firebase Console or the Reset Password tab on the login page.
 SEED_ADMINS = [
-    {
-        "email":    "superadmin@dealmind.ai",
-        "password": "DealMind@SuperAdmin2026!",
-        "name":     "Super Administrator",
-        "role":     "super_admin",
-    },
     {
         "email":    "admin@dealmind.ai",
         "password": "DealMind@Admin2026!",
         "name":     "Deal Admin",
-        "role":     "admin",
+        "role":     "admin",          # Full access + manage users
+    },
+    {
+        "email":    "admin2@dealmind.ai",
+        "password": "DealMind@Admin2_2026!",
+        "name":     "Deal Admin 2",
+        "role":     "admin",          # Second admin — same permissions
     },
     {
         "email":    "viewer@dealmind.ai",
         "password": "DealMind@Viewer2026!",
         "name":     "Deal Viewer",
-        "role":     "viewer",
+        "role":     "viewer",         # Read-only: pipeline + alerts only
     },
 ]
 
 # ── Seed loop ─────────────────────────────────────────────────────────────────
 print("\n🌱 Seeding DealMind admin accounts into Firebase...\n")
 
-for admin_data in SEED_ADMINS:
-    email    = admin_data["email"]
-    password = admin_data["password"]
-    name     = admin_data["name"]
-    role     = admin_data["role"]
+for user_data in SEED_ADMINS:
+    email    = user_data["email"]
+    password = user_data["password"]
+    name     = user_data["name"]
+    role     = user_data["role"]
 
     # 1. Create / get user in Firebase Auth
     try:
@@ -110,11 +123,21 @@ for admin_data in SEED_ADMINS:
         })
         print(f"     ↳ Firestore admin doc created — role: {role}")
 
-print("\n✅ Seeding complete! Admin accounts ready.\n")
-print("=" * 55)
-print("  LOGIN CREDENTIALS (change these after first login!)")
-print("=" * 55)
+print("\n✅ Seeding complete!\n")
+print("=" * 60)
+print("  LOGIN CREDENTIALS")
+print("  !! Change these passwords after first login !!")
+print("=" * 60)
 for a in SEED_ADMINS:
-    print(f"  [{a['role'].upper():15}] {a['email']}")
-    print(f"                   Password: {a['password']}")
+    print(f"  [{a['role'].upper():7}] {a['email']}")
+    print(f"           Password: {a['password']}")
     print()
+print("  HOW TO CHANGE A PASSWORD:")
+print("  Option A — Login page → Reset Password tab → enter email")
+print("  Option B — Firebase Console → Authentication → Users → Reset password")
+print("  Option C — Firebase Console → Authentication → Users → Edit → set new password")
+print()
+print("  WHO IS THE SUPER ADMIN?")
+print("  The Firebase project owner (venkatasaip52@gmail.com) is the")
+print("  platform-level super admin with full Firebase Console access.")
+print("  Inside the app, all 'admin' role users have equal permissions.")

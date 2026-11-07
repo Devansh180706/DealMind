@@ -10,6 +10,29 @@ from admin.admin_manager import get_admin_by_uid, update_last_login, ROLES
 
 SESSION_KEY = "dealmind_admin_session"
 
+# JavaScript injected once to prevent browser password-manager popups
+# (Chrome's "Use strong password" / Google Password Manager suggestion).
+_DISABLE_AUTOCOMPLETE_JS = """
+<script>
+(function() {
+    function patchInputs() {
+        document.querySelectorAll('input[type="password"]').forEach(function(el) {
+            el.setAttribute('autocomplete', 'off');
+            el.setAttribute('data-lpignore', 'true');
+            el.setAttribute('data-form-type', 'other');
+        });
+        document.querySelectorAll('input[type="email"], input[type="text"]').forEach(function(el) {
+            el.setAttribute('autocomplete', 'off');
+        });
+    }
+    // Patch immediately and watch for Streamlit re-renders
+    patchInputs();
+    var observer = new MutationObserver(patchInputs);
+    observer.observe(document.body, { childList: true, subtree: true });
+})();
+</script>
+"""
+
 
 def is_logged_in() -> bool:
     return SESSION_KEY in st.session_state and st.session_state[SESSION_KEY] is not None
@@ -35,7 +58,7 @@ def login(email: str, password: str) -> dict:
     if admin is None:
         raise ValueError("Your account is not registered as a DealMind administrator.")
     if not admin.get("is_active", True):
-        raise ValueError("Your admin account has been disabled. Contact a Super Admin.")
+        raise ValueError("Your admin account has been disabled. Contact an Admin.")
 
     # 3. Record login & persist session
     update_last_login(uid)
@@ -79,6 +102,9 @@ def require_permission(permission: str):
 
 def render_login_page():
     """Render the full-page admin login form."""
+    # Inject autocomplete-disabling script FIRST (before any form renders)
+    st.markdown(_DISABLE_AUTOCOMPLETE_JS, unsafe_allow_html=True)
+
     st.markdown("""
     <style>
         /* hide default streamlit chrome while on the login page */
@@ -113,13 +139,14 @@ def render_login_page():
             color: #64748B;
             margin-bottom: 28px;
         }
-        .role-pill {
-            display: inline-block;
-            padding: 2px 10px;
-            border-radius: 20px;
-            font-size: 0.75rem;
-            font-weight: 600;
-            margin-left: 6px;
+        .reset-info {
+            background: #F0F9FF;
+            border: 1px solid #BAE6FD;
+            border-radius: 8px;
+            padding: 12px 14px;
+            font-size: 0.85rem;
+            color: #0369A1;
+            margin-bottom: 12px;
         }
     </style>
     """, unsafe_allow_html=True)
@@ -136,7 +163,7 @@ def render_login_page():
         with tab_login:
             with st.form("admin_login_form", clear_on_submit=False):
                 email    = st.text_input("Email Address", placeholder="admin@dealmind.ai")
-                password = st.text_input("Password", type="password", placeholder="••••••••")
+                password = st.text_input("Password", type="password", placeholder="Enter your password")
                 submitted = st.form_submit_button("Sign In →", type="primary", use_container_width=True)
 
             if submitted:
@@ -154,17 +181,32 @@ def render_login_page():
                             st.error(f"⚠️ Unexpected error: {e}")
 
         with tab_reset:
-            st.caption("Enter your registered email to receive a password reset link.")
+            st.markdown("""
+            <div class="reset-info">
+            📧 <strong>How password reset works:</strong><br>
+            Enter your registered email below and click <em>Send Reset Link</em>.
+            Firebase will send a password-reset email directly to that address.
+            Click the link in the email, set your new password, then return here to sign in.
+            The link expires in <strong>1 hour</strong>.
+            </div>
+            """, unsafe_allow_html=True)
+
             with st.form("reset_form"):
                 reset_email = st.text_input("Registered Email", placeholder="admin@dealmind.ai")
                 reset_btn = st.form_submit_button("Send Reset Link", use_container_width=True)
+
             if reset_btn:
                 if not reset_email:
                     st.warning("Please enter your email address.")
                 else:
                     try:
                         send_password_reset(reset_email)
-                        st.success(f"Reset link sent to **{reset_email}**. Check your inbox.")
+                        st.success(
+                            f"✅ Reset email sent to **{reset_email}**.\n\n"
+                            "Check your inbox (and spam folder). "
+                            "Click the link in the email to set a new password. "
+                            "The link is valid for **1 hour**."
+                        )
                     except ValueError as e:
                         st.error(f"🚫 {e}")
 

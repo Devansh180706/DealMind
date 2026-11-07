@@ -1,6 +1,10 @@
 """
 DealMind Admin — Firestore Admin User Manager
 Handles CRUD for admin user profiles stored in the 'admins' Firestore collection.
+
+Roles (2 only):
+  - admin  : Full access to all features + can manage other admins/viewers
+  - viewer : Read-only access to pipeline and alerts
 """
 
 from __future__ import annotations
@@ -13,18 +17,18 @@ from admin.firebase_config import get_firestore_client
 ADMINS_COLLECTION = "admins"
 
 
-# ── Role definitions ──────────────────────────────────────────────────────────
+# ── Role definitions (2 roles only) ──────────────────────────────────────────
 ROLES = {
-    "super_admin": {
-        "label": "Super Admin",
-        "permissions": ["view_pipeline", "brief_me", "log_call", "view_alerts",
-                        "view_playbook", "manage_admins"],
-        "color": "#7C3AED",   # purple
-    },
     "admin": {
         "label": "Admin",
-        "permissions": ["view_pipeline", "brief_me", "log_call", "view_alerts",
-                        "view_playbook"],
+        "permissions": [
+            "view_pipeline",
+            "brief_me",
+            "log_call",
+            "view_alerts",
+            "view_playbook",
+            "manage_admins",   # Admins can manage the full admin roster
+        ],
         "color": "#1D4ED8",   # blue
     },
     "viewer": {
@@ -69,7 +73,7 @@ def list_all_admins() -> list[dict]:
     db = get_firestore_client()
     docs = db.collection(ADMINS_COLLECTION).stream()
     admins = [{"uid": d.id, **d.to_dict()} for d in docs]
-    role_order = {"super_admin": 0, "admin": 1, "viewer": 2}
+    role_order = {"admin": 0, "viewer": 1}
     return sorted(admins, key=lambda a: (role_order.get(a.get("role", "viewer"), 9),
                                          a.get("name", "")))
 
