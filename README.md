@@ -74,15 +74,70 @@ graph TD
 
 ## 🛠️ Architecture & Tech Stack
 
-- **Frontend UI:** Streamlit (`app.py`) with 5 dedicated views:
+- **Frontend UI:** Streamlit (`app.py`) with 5 dedicated views + Admin Panel:
   1. 📊 **Deal Pipeline** — Monitored accounts, stage metrics, and bank links.
   2. ⚡ **Brief Me (Copilot)** — Interactive pre-call brief with **Memory ON/OFF** comparison and **Memories Used** citation drawer.
   3. 📝 **Log a Call** — Real-time transcript extraction, contradiction detection, and memory retention.
   4. 🚨 **Active Alerts** — Scans open deals for overdue promises, silent stakeholders (14+ days), and legal review stalls.
   5. 🧠 **Playbook Insights** — Cross-deal reflections and Ground Truth pattern verification.
+  6. 👥 **Admin Panel** — User management (Admin role only).
 - **Memory Engine:** Vectorize Hindsight (`hindsight-client` 1.2.0)
 - **Fast LLM Inference:** Groq API (`openai/gpt-oss-120b`, `qwen/qwen3.8-27b`)
 - **Data Validation:** Pydantic v2 with strict schema repair and exponential backoff retry.
+- **Auth & Database:** Firebase Authentication + Firestore
+
+---
+
+## 🔐 Admin Login System
+
+The app is fully protected — no content is visible without logging in.
+
+
+
+### Roles (2 roles only)
+
+| Role | Deal Pipeline | Active Alerts | Brief Me | Log Call | Playbook | Admin Panel |
+|---|---|---|---|---|---|---|
+| **Admin** | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| **Viewer** | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ |
+
+> There can be **multiple Admins** — each has identical full permissions including managing other users.
+
+📖 **See [`ROLES_AND_ACCESS.md`](ROLES_AND_ACCESS.md)** for the full roles guide — what each role can do, real-life examples of who gets which role, and step-by-step instructions to assign/change roles.
+
+### Default Accounts (seed with `python scripts/seed_admins.py`)
+
+| Role | Email | Default Password |
+|---|---|---|
+| Admin | admin@dealmind.ai | `DealMind@Admin2026!` |
+| Admin | admin2@dealmind.ai | `DealMind@Admin2_2026!` |
+| Viewer | viewer@dealmind.ai | `DealMind@Viewer2026!` |
+
+> ⚠️ **Change all default passwords immediately after first login!**
+
+---
+
+## 🔑 How to Change Passwords
+
+Passwords are managed by **Firebase Authentication**, not inside the app.
+
+### Option A — Self-service (Recommended)
+1. Go to the login page → click **🔑 Reset Password** tab
+2. Enter the registered email → click **Send Reset Link**
+3. Firebase sends a reset email to that address (arrives in seconds)
+4. Click the link in the email → set a new password → sign in
+
+> The reset link is **valid for 1 hour** and can only be used once.
+
+### Option B — Admin resets another user's password (Firebase Console)
+1. [Firebase Console](https://console.firebase.google.com) → **Authentication** → **Users**
+2. Find the user → click **⋮** → **Reset password**
+3. Firebase emails a reset link directly to the user
+
+### Option C — Admin sets a password directly (Firebase Console)
+1. Firebase Console → **Authentication** → **Users**
+2. Click the user's email → click the **pencil (edit) icon**
+3. Enter the new password → **Save**
 
 ---
 
@@ -90,37 +145,63 @@ graph TD
 
 ### 1. Prerequisites
 - Python 3.11+
-- Groq API Key
-- Vectorize Hindsight Cloud API Key (use promo code `MEMHACK99` for \$50 free credits)
+- Groq API Key ([console.groq.com](https://console.groq.com))
+- Vectorize Hindsight API Key (promo code `MEMHACK99` for \$50 free credits)
+- Firebase project ([console.firebase.google.com](https://console.firebase.google.com))
 
-### 2. Installation
+### 2. Clone & Install
 ```bash
-# Clone the repository
-git clone https://github.com/your-username/deal-intel-agent.git
-cd deal-intel-agent
-
-# Install dependencies
-pip install hindsight-client groq streamlit python-dotenv pydantic
+git clone https://github.com/venky280406/DealMind.git
+cd DealMind
+pip install -r requirements.txt
 ```
 
-### 3. Configure API Keys
-Create a `.env` file in the root directory:
+### 3. Configure `.env`
+```bash
+cp .env.example .env
+# Edit .env and fill in all keys
+```
+
 ```ini
+# Groq
 GROQ_API_KEY=your_groq_api_key_here
+
+# Vectorize Hindsight
 HINDSIGHT_API_KEY=your_hindsight_api_key_here
 HINDSIGHT_BASE_URL=https://api.hindsight.vectorize.io
+
+# Firebase (from Project Settings → Your Apps → Web App)
+FIREBASE_API_KEY=AIzaSy...
+FIREBASE_AUTH_DOMAIN=your-project.firebaseapp.com
+FIREBASE_PROJECT_ID=your-project-id
+FIREBASE_STORAGE_BUCKET=your-project.appspot.com
+FIREBASE_MESSAGING_SENDER_ID=123456789
+FIREBASE_APP_ID=1:123456789:web:abcdef
+
+# Firebase Admin SDK (download from Project Settings → Service accounts)
+FIREBASE_SERVICE_ACCOUNT_PATH=firebase-service-account.json
 ```
 
-### 4. Run Smoke Test & Seed Memory
+> ⚠️ Never commit `.env` or `firebase-service-account.json` — both are in `.gitignore`.
+
+### 4. Firebase Setup
+1. Create a project at [console.firebase.google.com](https://console.firebase.google.com)
+2. Enable **Authentication → Email/Password**
+3. Enable **Firestore Database** (Production mode)
+4. Download a Service Account key → save as `firebase-service-account.json`
+
+### 5. Seed Admin Accounts
 ```bash
-# Verify API connections
-python scripts/smoke_test.py
-
-# Seed synthetic B2B SaaS deals into Hindsight Cloud
-python scripts/seed_memory.py
+python scripts/seed_admins.py
 ```
 
-### 5. Launch the Streamlit Application
+### 6. Seed Deal Memory
+```bash
+python scripts/smoke_test.py   # Verify API connections
+python scripts/seed_memory.py  # Seed synthetic deals into Hindsight
+```
+
+### 7. Launch
 ```bash
 streamlit run app.py
 ```
@@ -129,19 +210,18 @@ streamlit run app.py
 
 ## 🧪 Automated Test Suite
 
-Run all unit and verification tests:
 ```bash
-# Run all tests
 python -m unittest discover tests/
 ```
 
-Test coverage:
-- `test_llm.py`: Schema validation, markdown stripping, malformed JSON recovery, exponential backoff.
-- `test_memory.py`: Bank isolation, retain/recall parsing, and reflect operations.
-- `test_extract.py`: Extraction schema, SHA-256 deduplication, contradiction/budget change detection.
-- `test_brief.py`: Memory ON/OFF comparison, citation tracking, and empty-memory guardrail.
-- `test_alerts.py`: Overdue promises, silent champions (14+ days), and legal review stalls.
-- `test_full_flow.py`: End-to-end integration covering all 5 mandatory hackathon verification points.
+| Test File | What it covers |
+|---|---|
+| `test_llm.py` | Schema validation, markdown stripping, malformed JSON recovery, exponential backoff |
+| `test_memory.py` | Bank isolation, retain/recall parsing, reflect operations |
+| `test_extract.py` | Extraction schema, SHA-256 deduplication, contradiction/budget change detection |
+| `test_brief.py` | Memory ON/OFF comparison, citation tracking, empty-memory guardrail |
+| `test_alerts.py` | Overdue promises, silent champions (14+ days), legal review stalls |
+| `test_full_flow.py` | End-to-end integration covering all 5 hackathon verification points |
 
 ---
 
@@ -151,4 +231,3 @@ Test coverage:
 2. **00:15 - 00:30 | Memory OFF vs ON**: Go to **⚡ Brief Me**. Select *Acme Corp*. Click **Memory OFF** first: shows generic boilerplate. Flip to **Memory ON**: Hindsight immediately recalls Sarah Connor's exact \$75k budget objection and past quotes from CloudFort.
 3. **00:30 - 00:45 | Log a Call & Extract**: Switch to **📝 Log a Call**. Paste a debrief where Alex presented the ROI calculator. Click **Extract & Retain**. Watch the agent parse the facts, check for contradictions, and retain into `deal-acme-corp`.
 4. **00:45 - 01:00 | The Learning Loop**: Open **🧠 Playbook Insights**. Show Hindsight `reflect()` synthesizing cross-deal evidence: *"Presenting ROI case studies closes 80%+ of deals where CFOs challenge price."* Click **🎯 Ground Truth Verification** to prove the agent autonomously discovered the planted patterns!
-
