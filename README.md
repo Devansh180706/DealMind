@@ -107,6 +107,8 @@ The **platform-level super admin** is the Firebase project owner:
 
 > There can be **multiple Admins** — each has identical full permissions including managing other users.
 
+📖 **See [`ROLES_AND_ACCESS.md`](ROLES_AND_ACCESS.md)** for the full roles guide — what each role can do, real-life examples of who gets which role, and step-by-step instructions to assign/change roles.
+
 ### Default Accounts (seed with `python scripts/seed_admins.py`)
 
 | Role | Email | Default Password |
