@@ -92,11 +92,7 @@ graph TD
 
 The app is fully protected — no content is visible without logging in.
 
-### Who is the Super Admin?
-The **platform-level super admin** is the Firebase project owner:
-- **Google Account:** `venkatasaip52@gmail.com`
-- This account has full access to the Firebase Console and can reset any password, disable any user, and view all data.
-- Inside the app itself, all users with the **Admin** role share the same permissions.
+
 
 ### Roles (2 roles only)
 
